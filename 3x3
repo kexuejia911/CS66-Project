@@ -1,0 +1,745 @@
+include Irvine32.inc
+
+;You need all the data below
+
+N = 3
+T = N * N
+
+Map struct
+
+    num dword T DUP(0)
+	par dword 0
+	sib dword 0
+	lev dword 0
+
+Map ends
+
+lastaddress = 44
+paraddress = lastaddress - 8
+presave = 362880
+
+.data
+
+head dword 0
+hHeap dword 0
+curM dword 0
+lastM dword 0
+nextM dword 0
+arr dword T DUP(0)
+beginlist dword T DUP(0)
+cheatlist dword presave DUP(0)
+list dword presave DUP(0)
+
+set0 dword HEAP_ZERO_MEMORY
+sizel dword type Map
+solution dword 1,2,3,4,5,6,7,8,0
+checkmark dword 0
+count dword 0
+level dword 0
+number dword 0
+
+thisM Map <>
+
+:You need all the data above
+
+bytearr byte 1,2,3,4,5,6,7,8,0   ; You don't need this
+
+.code
+main proc
+
+    mov esi,offset bytearr
+	call Begin
+	call SPrint
+
+
+	invoke ExitProcess,0
+main endp
+
+NonGen proc uses ecx eax esi
+
+    mov ecx,T
+	mov edi,0
+	L1:
+	movzx eax,byte ptr [esi]
+	mov thisM.num[edi],eax
+	inc esi
+	add edi,4
+	loop L1
+
+	ret
+NonGen endp
+
+Findout proc
+
+    mov esi,0
+	mov edi,0
+    mov ecx,count    
+L1:
+	add esi,4
+	loop L1
+	sub esi,4
+	mov ebx,cheatlist[esi]
+	mov list[edi],ebx
+	add edi,4
+	inc number
+L2:
+    .if ebx != 0
+	mov eax,[ebx+paraddress]
+	.if eax != 0
+	mov list[edi],eax
+	inc number
+	add edi,4
+	.endif
+	mov ebx,eax
+	jmp L2
+	.endif
+
+	ret
+Findout endp
+
+SPrint proc uses eax ebx ecx edx esi edi
+
+    call Findout
+    mov edi,0
+	mov ecx,number
+L0:
+	add edi,4
+	loop L0
+	sub edi,4
+	mov ecx,number
+L1:
+	mov esi,list[edi]
+	call ToArr
+	push ecx
+	mov ecx,N
+	mov ebx,0
+L2:
+	push ecx
+	mov ecx,N
+L3:
+	mov eax,arr[ebx]
+	add ebx,4
+	call WriteDec
+	loop L3
+
+	call crlf
+	pop ecx
+	loop L2
+
+	pop ecx
+	sub edi,4
+	call crlf
+	loop L1
+
+    ret
+	Sprint endp
+
+Begin proc uses eax ebx ecx edx esi edi
+
+    call NonGen
+
+    INVOKE GetProcessHeap
+	mov hHeap,eax
+	
+	mov edi,0
+	call Creat
+	mov head,ebx
+	mov esi,head
+	mov cheatlist[edi],esi
+	add edi,4
+	call ToHeap
+	add count,1
+    call Move
+
+	ret
+Begin endp
+
+Creat proc uses eax
+
+    INVOKE heapAlloc,hHeap,set0,sizel
+	mov ebx,eax
+    ret
+
+Creat endp
+
+;esi is the address of heap to allocate
+ToHeap proc uses eax ecx esi edi
+
+    mov edi,0
+	mov ecx,T
+
+L1:
+    mov eax,thisM.num[edi]
+	mov [esi],eax
+	add esi,4
+	add edi,4
+	loop L1
+
+	mov eax,thisM.par
+	mov [esi],eax
+	add esi,4
+	mov eax,thisM.sib
+	mov [esi],eax
+	add esi,4
+	mov eax,thisM.lev
+	mov [esi],eax
+
+	ret
+ToHeap endp
+
+;esi is the address of heap to take out
+ToMap proc uses eax ecx esi edi
+    
+    mov edi,0
+	mov ecx,T
+
+L1:
+    mov eax,[esi]
+	mov thisM.num[edi],eax
+	add esi,4
+	add edi,4
+	loop L1
+
+	mov eax,[esi]
+	mov thisM.par,eax
+	add esi,4
+	mov eax,[esi]
+	mov thisM.sib,eax
+	add esi,4
+	mov eax,[esi]
+	mov thisM.lev,eax
+
+	ret
+ToMap endp
+
+SaveP proc uses eax
+    
+	mov eax,curM
+	mov thisM.par,eax
+
+	ret
+SaveP endp
+
+SaveS proc uses eax
+    
+	mov eax,nextM
+	mov thisM.sib,eax
+
+	ret
+SaveS endp
+
+SaveL proc uses eax
+    
+	mov eax,level
+	mov thisM.sib,eax
+
+	ret
+SaveL endp
+
+;return eax
+Find proc uses ebx ecx edi
+
+    call ToMap
+    mov eax,0
+	mov edi,0
+	mov ecx,T
+L1:
+    mov ebx,thisM.num[edi]
+    .if ebx == 0
+	jmp L2
+	.endif
+	inc eax
+	add edi,4
+	loop L1
+
+L2:
+    ret
+Find endp
+
+ToArr proc uses eax ecx esi edi
+    
+	mov edi,0
+	mov ecx,T
+L1:
+	mov eax,[esi]
+	mov arr[edi],eax
+	add esi,4
+	add edi,4
+	loop L1
+
+	ret
+ToArr endp
+
+
+;return edx
+Compare proc uses eax ebx ecx esi
+
+   mov esi,0
+   mov edx,0
+   mov ecx,T
+
+L1:
+   mov eax,thisM.num[esi]
+   mov ebx,arr[esi]
+   .if eax == ebx
+   inc edx
+   .endif
+   add esi,4
+   loop L1
+
+   .if edx == T
+   jmp L2
+   .endif
+
+   mov checkmark,0
+   ret
+
+L2:
+   mov checkmark,1
+   ret
+
+Compare endp
+
+Fin proc uses eax ecx ebx esi
+
+   mov esi,0
+   mov edx,0
+   mov ecx,T
+
+L1:
+   mov eax,thisM.num[esi]
+   mov ebx,solution[esi]
+   .if eax == ebx
+   inc edx
+   .endif
+   add esi,4
+   loop L1
+
+   cmp edx,T
+   jl L2
+
+   mov checkmark,2
+   ret
+
+L2:
+   mov checkmark,0
+   ret
+
+Fin endp
+
+Search proc uses esi ecx edi esi
+
+    .if checkmark == 2
+	jmp L2
+	.endif
+    
+	call Fin
+	.if checkmark == 2
+	jmp L2
+	.endif
+	mov edi,0
+	mov ecx,count
+
+L1:
+    mov esi,cheatlist[edi]
+    call ToArr
+    call Compare
+	.if checkmark == 1
+	jmp L2
+	.endif
+	add edi,4
+	loop L1
+
+L2:
+    ret
+
+Search endp
+
+
+Up proc uses ebx
+
+    mov ebx,thisM.num[eax*4]
+	sub eax,N
+	mov edx,thisM.num[eax*4]
+	mov thisM.num[eax*4],ebx
+	add eax,N
+	mov thisM.num[eax*4],edx
+
+	call Search
+	ret
+Up endp
+
+Down proc uses ebx
+
+    mov ebx,thisM.num[eax*4]
+	add eax,N
+	mov edx,thisM.num[eax*4]
+	mov thisM.num[eax*4],ebx
+	sub eax,N
+	mov thisM.num[eax*4],edx
+
+	call Search
+	ret
+Down endp
+
+Left proc uses ebx
+
+    mov ebx,thisM.num[eax*4]
+	dec eax
+	mov edx,thisM.num[eax*4]
+	mov thisM.num[eax*4],ebx
+	inc eax
+	mov thisM.num[eax*4],edx
+
+	call Search
+	ret
+Left endp
+
+Right proc uses ebx
+
+    mov ebx,thisM.num[eax*4]
+	inc eax
+	mov edx,thisM.num[eax*4]
+	mov thisM.num[eax*4],ebx
+	dec eax
+	mov thisM.num[eax*4],edx
+
+	call Search
+	ret
+Right endp
+
+New proc
+
+    call Creat
+	mov esi,ebx
+	mov cheatlist[edi],ebx
+	add edi,4
+	mov ecx,lastM
+	mov nextM,ecx
+	mov lastM,ebx
+	call SaveP
+	call SaveS
+	call SaveL
+	call ToHeap
+	add count,1
+
+	ret
+New endp
+
+MoveU proc uses eax ebx ecx
+
+    mov esi,curM
+	call ToMap
+	call Up
+	.if checkmark == 0
+	call New
+	.endif
+	.if checkmark == 2
+	call New
+	.endif
+
+	ret
+MoveU endp
+
+MoveD proc uses eax ebx ecx
+
+    mov esi,curM
+	call ToMap
+	call Down
+	.if checkmark == 0
+	call New
+	.endif
+	.if checkmark == 2
+	call New
+	.endif
+
+	ret
+MoveD endp
+
+MoveL proc uses eax ebx ecx
+
+    mov esi,curM
+	call ToMap
+	call Left
+	.if checkmark == 0
+	call New
+	.endif
+	.if checkmark == 2
+	.endif
+
+	ret
+MoveL endp
+
+MoveR proc uses eax ebx ecx
+
+    mov esi,curM
+	call ToMap
+	call Right
+	.if checkmark == 0
+	call New
+	.endif
+	.if checkmark == 2
+	call New
+	.endif
+
+	ret
+MoveR endp
+
+Cont proc uses eax ecx ebx edx
+
+    .if checkmark == 0
+	call Move
+	.endif
+
+	ret
+Cont endp
+
+Save proc
+   
+	mov ecx,curM
+	mov ebx,lastM
+	mov edx,nextM
+    
+	ret
+Save endp
+
+Load proc
+    
+	mov curM,ecx
+	mov lastM,ebx
+	mov nextM,edx
+    
+	ret
+Load endp
+
+GoU proc
+
+    .if checkmark == 2
+	ret
+	.endif
+    
+	call MoveU
+	call Save
+	call Cont
+	call Load
+
+	ret
+GoU endp
+
+GoD proc
+
+    .if checkmark == 2
+	ret
+	.endif
+    
+	call MoveD
+	call Save
+	call Cont
+	call Load
+
+	ret
+GoD endp
+
+GoL proc
+
+    .if checkmark == 2
+	ret
+	.endif
+    
+	call MoveL
+	call Save
+	call Cont
+	call Load
+
+	ret
+GoL endp
+
+GoR proc
+
+    .if checkmark == 2
+	ret
+	.endif
+    
+	call MoveR
+	call Save
+	call Cont
+	call Load
+
+	ret
+GoR endp
+   
+;To use N value, the only thing we need change is function below
+
+P0 proc uses eax ecx
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoD
+	call GoR
+
+	dec level
+
+	ret
+P0 endp
+
+P1 proc uses eax ecx
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoD
+	call GoL
+	call GoR
+
+	dec level
+
+	ret
+
+P1 endp
+
+P2 proc uses eax ecx
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoD
+	call GoL
+
+	dec level
+
+	ret
+P2 endp
+
+P3 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoU
+	call GoR
+	call GoD
+
+	dec level
+
+	ret
+P3 endp
+
+P4 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoU
+	call GoL
+	call GoR
+	call GoD
+
+	dec level
+
+	ret
+P4 endp
+
+P5 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoU
+	call GoL
+	call GoD
+
+	dec level
+
+	ret
+P5 endp
+
+P6 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoU
+	call GoR
+
+	dec level
+
+	ret
+P6 endp
+
+P7 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoR
+	call GoL
+	call GoU
+
+	dec level
+
+	ret
+P7 endp
+
+P8 proc uses eax ecx 
+
+    inc level
+    mov curM,esi
+	mov lastM,0
+
+	call GoU
+	call GoL
+
+	dec level
+
+	ret
+P8 endp
+
+Move proc uses eax ecx
+
+    .if checkmark == 2
+	ret
+	.endif
+
+    call Find
+
+	.if eax == 0
+	call P0
+	.endif
+	.if eax == 1
+	call P1
+	.endif
+	.if eax == 2
+	call P2
+	.endif
+	.if eax == 3
+	call P3
+	.endif
+	.if eax == 4
+	call P4
+	.endif
+	.if eax == 5
+	call P5
+	.endif
+	.if eax == 6
+	call P6
+	.endif
+	.if eax == 7
+	call P7
+	.endif
+	.if eax == 8
+	call P8
+	.endif
+
+	ret
+Move endp
+
+end main
