@@ -649,24 +649,14 @@ number dword 0
 
 thisM Map <>
 
-;You need all the data above
-
-bytearr byte 1,2,3,4,5,6,7,8,0   ; You don't need this
-
-COMMENT ^
 .code
-main proc
+Free proc
 
-    mov esi,offset bytearr
-	call Begin
-	call SPrint
+    mov esi,0
+	mov eax,cheatlist[esi]
+	ret
+	Free endp
 
-
-	invoke ExitProcess,0
-main endp
-^
-
-.code
 NonGen proc uses ecx eax esi
 
     mov ecx,T
@@ -677,6 +667,10 @@ NonGen proc uses ecx eax esi
 	inc esi
 	add edi,4
 	loop L1
+
+	mov thisM.par,0
+	mov thisM.sib,0
+	mov thisM.lev,0
 
 	ret
 NonGen endp
@@ -751,6 +745,7 @@ Begin proc uses eax ebx ecx edx esi edi
     call NonGen
 	mov count,0
 	mov number,0
+	mov level,0
 
     INVOKE GetProcessHeap
 	mov hHeap,eax
