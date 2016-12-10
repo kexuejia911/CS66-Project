@@ -1,0 +1,6 @@
+There are two function you can use from those code.   Begin   and     Getmap
+you should call Begin at the first line of the program
+Begin will randomly generate a array and allocate all the posibility of moving into heap
+After Begin finished, you will have a dword array call beginlist
+beginlist is the random one player should see when the start the game
+when you want to print the tree map, just call Getmap
